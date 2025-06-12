@@ -1,0 +1,691 @@
+/* ========== Reset & Base Styles ========== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #f2f5fe;
+    color: #e8e9ea;
+    line-height: 1.5;
+    overflow-x: hidden;
+}
+
+/* Hide Duplicate Header Elements from Legacy PHP */
+body>h2:first-of-type,
+body>h3:first-of-type,
+body>a[href="logout.php"]:first-of-type {
+    display: none;
+}
+
+/* ========== Sidebar Styles ========== */
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 260px;
+    height: 100vh;
+    background-color: #222831;
+    border-right: 1px solid #3a3b3e;
+    padding: 20px;
+    z-index: 1000;
+    overflow-y: auto;
+}
+
+.sidebar h2 {
+    color: #fff;
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #3a3b3e;
+}
+
+.sidebar p {
+    color: #b0b3b8;
+    font-size: 14px;
+    margin-bottom: 20px;
+    padding: 8px 12px;
+    background-color: #3a3b3e;
+    border-radius: 6px;
+}
+
+.sidebar a {
+    display: block;
+    color: #e8e9ea;
+    text-decoration: none;
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: background-color 0.2s ease;
+}
+
+.sidebar a:hover {
+    background-color: #3a3b3e;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    margin-bottom: 4px;
+    color: #e0e0e0;
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.add-task-btn {
+    all: unset;
+    background-color: skyblue;
+    padding: 7px 9px;
+    color: black;
+    font-weight: 600;
+    border-radius: 3px;
+    margin-bottom: 20px;
+}
+
+.tasks-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 2px solid gray;
+}
+
+.nav-item:hover {
+    background: #3a3a3a;
+}
+
+.nav-item.active {
+    background: #404040;
+}
+
+.nav-item .icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 12px;
+    display: contents;
+}
+
+.create-btn {
+    background: #ff4444;
+    color: white;
+    margin-bottom: 20px;
+}
+
+.create-btn:hover {
+    background: #ff5555;
+}
+
+.inbox-dot {
+    width: 8px;
+    height: 8px;
+    background: #ff4444;
+    border-radius: 50%;
+}
+
+.project-color {
+    width: 12px;
+    height: 12px;
+    background: #4ECDC4;
+    border-radius: 2px;
+}
+
+.workspace-arrow {
+    margin-left: auto;
+    font-size: 12px;
+}
+
+/* ========== Main Content Area ========== */
+.main-content {
+    margin-left: 260px;
+    padding: 30px 40px;
+    min-height: 100vh;
+    background-color: white;
+}
+
+.main-content h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: black;
+    margin-bottom: 30px;
+}
+
+.main-content>button {
+    background-color: #f06a6a;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 30px;
+    transition: background-color 0.2s ease;
+}
+
+.main-content>button:hover {
+    background-color: #e85a5a;
+}
+
+.main-content h2 {
+    font-size: 20px;
+    font-weight: 600;
+    padding-bottom: 10px;
+}
+
+/* Main Task Box Container */
+.main-task-box {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    margin: 20px;
+    overflow: hidden;
+    border: 1px solid #e8e9ea;
+}
+
+.task-container {
+    padding: 24px;
+}
+
+/* Header Section */
+.task-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.task-icon {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.icon-circle {
+    width: 24px;
+    height: 24px;
+    border: 2px dashed #d0d7de;
+    border-radius: 50%;
+    background-color: transparent;
+}
+
+.task-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #24292f;
+    margin: 0;
+}
+
+.task-lock-icon {
+    font-size: 14px;
+    color: #656d76;
+}
+
+.task-actions {
+    display: flex;
+    align-items: center;
+}
+
+.more-options {
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: #656d76;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.more-options:hover {
+    background-color: #f6f8fa;
+}
+
+/* Tab Navigation */
+.task-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 24px;
+    border-bottom: 1px solid #d0d7de;
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #656d76;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.tab-btn.active {
+    color: #24292f;
+    border-bottom-color: #24292f;
+}
+
+.tab-btn:hover {
+    color: #24292f;
+}
+
+/* Create Task Button */
+.create-task-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    color: #656d76;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 8px 0;
+    margin-bottom: 16px;
+    transition: color 0.2s;
+}
+
+.create-task-btn:hover {
+    color: #24292f;
+}
+
+.plus-icon {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+/* Task List */
+.task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.task-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #f6f8fa;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.task-item:hover {
+    background-color: #f6f8fa;
+    margin: 0 -24px;
+    padding-left: 24px;
+    padding-right: 24px;
+}
+
+.task-item:last-child {
+    border-bottom: none;
+}
+
+/* Task Checkbox */
+.task-checkbox {
+    margin-right: 12px;
+}
+
+.task-check {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #d0d7de;
+    border-radius: 50%;
+    cursor: pointer;
+    appearance: none;
+    position: relative;
+    background-color: white;
+}
+
+.task-check:checked {
+    background-color: #0969da;
+    border-color: #0969da;
+}
+
+.task-check:checked::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+/* Task Content */
+.task-content {
+    flex: 1;
+    margin-right: 12px;
+}
+
+.task-name {
+    font-size: 14px;
+    color: #24292f;
+    font-weight: 400;
+}
+
+/* Task Meta Information */
+.task-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    color: #656d76;
+}
+
+.task-project {
+    background-color: #ddf4ff;
+    color: #0969da;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.task-date {
+    font-weight: 500;
+}
+
+/* Modal Styles (keeping your existing modal styles but updating colors) */
+/* General Modal Styles */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+/* Main Modal Content Styling */
+.modal-content {
+  background-color: #ffffff;
+  margin: 10% auto;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  width: 90%;
+  max-width: 500px;
+  position: relative;
+}
+
+/* Close Button Styling */
+.close-btn {
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  font-size: 24px;
+  font-weight: bold;
+  color: #656d76;
+  cursor: pointer;
+}
+.close-btn:hover {
+  color: #24292f;
+}
+
+/* Headings */
+.modal-content h2 {
+  color: #24292f;
+  margin-bottom: 20px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+/* Inputs, Textarea, and Select */
+.modal-content input,
+.modal-content textarea,
+.modal-content select {
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0 16px 0;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: #ffffff;
+  color: #24292f;
+}
+
+.modal-content input:focus,
+.modal-content textarea:focus,
+.modal-content select:focus {
+  outline: none;
+  border-color: #0969da;
+  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.1);
+}
+
+/* Buttons */
+.modal-content button {
+  background-color: #0969da;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-right: 10px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.modal-content button:hover {
+  background-color: #0550ae;
+}
+
+/* Cancel Button */
+.modal-content button[type="button"] {
+  background-color: #f6f8fa;
+  color: #24292f;
+  border: 1px solid #d0d7de;
+}
+
+.modal-content button[type="button"]:hover {
+  background-color: #f3f4f6;
+}
+
+/* Labels */
+.modal-content label {
+  display: block;
+  margin: 16px 0 8px 0;
+  font-weight: 500;
+  color: #24292f;
+  font-size: 14px;
+}
+
+/* Color Palette Modal */
+.cp_modal {
+  display: none;
+  position: fixed;
+  z-index: 1100;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+.cp_modal-content {
+  background-color: #ffffff;
+  margin: 15% auto;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #888;
+  width: 320px;
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Close Icon in Color Modal */
+.cp_close {
+  color: #aaa;
+  float: right;
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.cp_close:hover,
+.cp_close:focus {
+  color: #000;
+  text-decoration: none;
+}
+
+/* Color Options */
+.color-box {
+  width: 50px;
+  height: 50px;
+  display: inline-block;
+  margin: 5px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: transform 0.2s, border-color 0.2s;
+}
+.color-box:hover {
+  transform: scale(1.1);
+  border-color: #000;
+}
+.color-box:nth-child(1) { background-color: #FFF1CA; }
+.color-box:nth-child(2) { background-color: #FFB823; }
+.color-box:nth-child(3) { background-color: #708A58; }
+.color-box:nth-child(4) { background-color: #2D4F2B; }
+.color-box:nth-child(5) { background-color: #E7EFC7; }
+
+/* Preview Button */
+.task-project,
+#cp_openModalBtn {
+  padding: 10px 20px;
+  border: none;
+  background-color: #ddd;
+  font-weight: bold;
+  margin-top: 20px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background-color 0.3s;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .main-task-box {
+        margin: 10px;
+    }
+    
+    .task-container {
+        padding: 16px;
+    }
+    
+    .task-item:hover {
+        margin: 0 -16px;
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+}
+
+/* ========== Task Fields Grid ========== */
+.fields-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.large-box {
+    height: 80px;
+}
+
+/* ========== Status Colors ========== */
+.task[data-status="In Progress"] {
+    border-left: 4px solid #f9c74f;
+}
+
+.task[data-status="Pending"] {
+    border-left: 4px solid #90a4ae;
+}
+
+.task[data-status="Completed"] {
+    border-left: 4px solid #43a047;
+    opacity: 0.7;
+}
+
+/* ========== Placeholder & Scroll Styling ========== */
+input::placeholder,
+textarea::placeholder {
+    color: #808080;
+}
+
+.sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+    background: #2c2d30;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background: #4a4b4e;
+    border-radius: 3px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+    background: #5a5b5e;
+}
+
+/* ========== Animation for Status Change ========== */
+.task.updating {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.status-updated {
+    animation: flash-success 0.3s ease;
+}
+
+@keyframes flash-success {
+    0% {
+        background-color: #2c2d30;
+    }
+
+    50% {
+        background-color: rgba(67, 160, 71, 0.2);
+    }
+
+    100% {
+        background-color: #2c2d30;
+    }
+}
+
+/* ========== Responsive Design ========== */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        padding: 15px;
+    }
+
+    .main-content {
+        margin-left: 0;
+        padding: 20px;
+    }
+
+    .modal-content {
+        width: 95%;
+        margin: 10% auto;
+        padding: 20px;
+    }
+}
