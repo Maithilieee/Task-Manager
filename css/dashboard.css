@@ -405,178 +405,194 @@ body>a[href="logout.php"]:first-of-type {
 /* Modal Styles (keeping your existing modal styles but updating colors) */
 /* General Modal Styles */
 .modal {
-  display: none;
-  position: fixed;
-  z-index: 1000;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
 }
 
 /* Main Modal Content Styling */
 .modal-content {
-  background-color: #ffffff;
-  margin: 10% auto;
-  padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  width: 90%;
-  max-width: 500px;
-  position: relative;
+    background-color: #ffffff;
+    margin: 10% auto;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    width: 90%;
+    max-width: 500px;
+    position: relative;
 }
 
 /* Close Button Styling */
 .close-btn {
-  position: absolute;
-  right: 20px;
-  top: 20px;
-  font-size: 24px;
-  font-weight: bold;
-  color: #656d76;
-  cursor: pointer;
+    position: absolute;
+    right: 20px;
+    top: 20px;
+    font-size: 24px;
+    font-weight: bold;
+    color: #656d76;
+    cursor: pointer;
 }
+
 .close-btn:hover {
-  color: #24292f;
+    color: #24292f;
 }
 
 /* Headings */
 .modal-content h2 {
-  color: #24292f;
-  margin-bottom: 20px;
-  font-size: 20px;
-  font-weight: 600;
+    color: #24292f;
+    margin-bottom: 20px;
+    font-size: 20px;
+    font-weight: 600;
 }
 
 /* Inputs, Textarea, and Select */
 .modal-content input,
 .modal-content textarea,
 .modal-content select {
-  width: 100%;
-  padding: 12px;
-  margin: 8px 0 16px 0;
-  border: 1px solid #d0d7de;
-  border-radius: 6px;
-  font-size: 14px;
-  background-color: #ffffff;
-  color: #24292f;
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0 16px 0;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    font-size: 14px;
+    background-color: #ffffff;
+    color: #24292f;
 }
 
 .modal-content input:focus,
 .modal-content textarea:focus,
 .modal-content select:focus {
-  outline: none;
-  border-color: #0969da;
-  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.1);
+    outline: none;
+    border-color: #0969da;
+    box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.1);
 }
 
 /* Buttons */
 .modal-content button {
-  background-color: #0969da;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 6px;
-  cursor: pointer;
-  margin-right: 10px;
-  font-size: 14px;
-  font-weight: 500;
+    background-color: #0969da;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-right: 10px;
+    font-size: 14px;
+    font-weight: 500;
 }
 
 .modal-content button:hover {
-  background-color: #0550ae;
+    background-color: #0550ae;
 }
 
 /* Cancel Button */
 .modal-content button[type="button"] {
-  background-color: #f6f8fa;
-  color: #24292f;
-  border: 1px solid #d0d7de;
+    background-color: #f6f8fa;
+    color: #24292f;
+    border: 1px solid #d0d7de;
 }
 
 .modal-content button[type="button"]:hover {
-  background-color: #f3f4f6;
+    background-color: #f3f4f6;
 }
 
 /* Labels */
 .modal-content label {
-  display: block;
-  margin: 16px 0 8px 0;
-  font-weight: 500;
-  color: #24292f;
-  font-size: 14px;
+    display: block;
+    margin: 16px 0 8px 0;
+    font-weight: 500;
+    color: #24292f;
+    font-size: 14px;
 }
 
 /* Color Palette Modal */
 .cp_modal {
-  display: none;
-  position: fixed;
-  z-index: 1100;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  overflow: auto;
-  background-color: rgba(0, 0, 0, 0.4);
+    display: none;
+    position: fixed;
+    z-index: 1100;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
 }
 
 .cp_modal-content {
-  background-color: #ffffff;
-  margin: 15% auto;
-  padding: 20px;
-  border-radius: 8px;
-  border: 1px solid #888;
-  width: 320px;
-  text-align: center;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    background-color: #ffffff;
+    margin: 15% auto;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #888;
+    width: 320px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 /* Close Icon in Color Modal */
 .cp_close {
-  color: #aaa;
-  float: right;
-  font-size: 24px;
-  font-weight: bold;
-  cursor: pointer;
+    color: #aaa;
+    float: right;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
 }
+
 .cp_close:hover,
 .cp_close:focus {
-  color: #000;
-  text-decoration: none;
+    color: #000;
+    text-decoration: none;
 }
 
 /* Color Options */
 .color-box {
-  width: 50px;
-  height: 50px;
-  display: inline-block;
-  margin: 5px;
-  cursor: pointer;
-  border: 2px solid transparent;
-  transition: transform 0.2s, border-color 0.2s;
+    width: 50px;
+    height: 50px;
+    display: inline-block;
+    margin: 5px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.2s, border-color 0.2s;
 }
+
 .color-box:hover {
-  transform: scale(1.1);
-  border-color: #000;
+    transform: scale(1.1);
+    border-color: #000;
 }
-.color-box:nth-child(1) { background-color: #FFF1CA; }
-.color-box:nth-child(2) { background-color: #FFB823; }
-.color-box:nth-child(3) { background-color: #708A58; }
-.color-box:nth-child(4) { background-color: #2D4F2B; }
-.color-box:nth-child(5) { background-color: #E7EFC7; }
+
+.color-box:nth-child(1) {
+    background-color: #FFF1CA;
+}
+
+.color-box:nth-child(2) {
+    background-color: #FFB823;
+}
+
+.color-box:nth-child(3) {
+    background-color: #708A58;
+}
+
+.color-box:nth-child(4) {
+    background-color: #2D4F2B;
+}
+
+.color-box:nth-child(5) {
+    background-color: #E7EFC7;
+}
 
 /* Preview Button */
 .task-project,
 #cp_openModalBtn {
-  padding: 10px 20px;
-  border: none;
-  background-color: #ddd;
-  font-weight: bold;
-  margin-top: 20px;
-  cursor: pointer;
-  border-radius: 6px;
-  transition: background-color 0.3s;
+    border: none;
+    background-color: #ddd;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background-color 0.3s;
 }
 
 /* Responsive Design */
@@ -584,11 +600,11 @@ body>a[href="logout.php"]:first-of-type {
     .main-task-box {
         margin: 10px;
     }
-    
+
     .task-container {
         padding: 16px;
     }
-    
+
     .task-item:hover {
         margin: 0 -16px;
         padding-left: 16px;
