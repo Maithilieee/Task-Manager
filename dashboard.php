@@ -140,6 +140,7 @@ $currentDayDate = date('l, F j'); // e.g., Friday, June 13
   <link rel="stylesheet" href="css/dashboard.css">
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="/css/">
 
 </head>
 
