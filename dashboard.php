@@ -1,19 +1,19 @@
 <?php
 ini_set('display_errors', 1);
-error_reporting(E_ALL);
+error_reporting(E_ALL & ~E_DEPRECATED);
 session_start();
 
-// Redirect if user not logged in
+// ========== Auth Check ==========
 if (!isset($_SESSION['user_id'])) {
   header("Location: index.php");
   exit;
 }
 
-// Load database connection
+// ========== DB Connection ==========
 require_once 'includes/database.php';
 $db = (new Database())->connect();
 
-// Fetch user's project
+// ========== Fetch User's Project ==========
 $project_stmt = $db->prepare("SELECT id, project_name FROM projects WHERE user_id = ?");
 $project_stmt->execute([$_SESSION['user_id']]);
 $project = $project_stmt->fetch(PDO::FETCH_ASSOC);
@@ -25,57 +25,81 @@ if (!$project) {
 
 $project_id = $project['id'];
 
-// Handle AJAX requests
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+// ========== Handle AJAX Requests ==========
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   header('Content-Type: application/json');
 
   try {
-    switch ($_POST['action']) {
-      case 'create_task':
-        $stmt = $db->prepare("INSERT INTO tasks (project_id, task_name, description, due_date, status, color) VALUES (?, ?, ?, ?, ?, ?)");
-        $result = $stmt->execute([
-          $project_id,
-          $_POST['task_name'],
-          $_POST['description'] ?? '',
-          $_POST['due_date'],
-          $_POST['status'] ?? 'Pending',
-          $_POST['task_color'] ?? '#4285f4'
-        ]);
-        echo json_encode(['success' => $result]);
-        exit;
+    $action = $_POST['action'] ?? '';
 
-      case 'update_task':
-        $stmt = $db->prepare("UPDATE tasks SET task_name = ?, description = ?, due_date = ?, status = ?, color = ? WHERE id = ? AND project_id = ?");
-        $result = $stmt->execute([
-          $_POST['task_name'],
-          $_POST['description'] ?? '',
-          $_POST['due_date'],
-          $_POST['status'],
-          $_POST['task_color'] ?? '#4285f4',
-          $_POST['task_id'],
-          $project_id
-        ]);
-        echo json_encode(['success' => $result]);
-        exit;
-
-      case 'update_status':
-        $stmt = $db->prepare("UPDATE tasks SET status = ? WHERE id = ? AND project_id = ?");
-        $result = $stmt->execute([$_POST['status'], $_POST['task_id'], $project_id]);
-        echo json_encode(['success' => $result]);
-        exit;
-
-      case 'delete_task':
-        $stmt = $db->prepare("DELETE FROM tasks WHERE id = ? AND project_id = ?");
-        $result = $stmt->execute([$_POST['task_id'], $project_id]);
-        echo json_encode(['success' => $result]);
-        exit;
+    // ===== Create Task =====
+    if ($action === 'create_task') {
+      $stmt = $db->prepare("
+        INSERT INTO tasks (project_id, task_name, description, due_date, status, color)
+        VALUES (?, ?, ?, ?, ?, ?)
+      ");
+      $result = $stmt->execute([
+        $project_id,
+        $_POST['task_name'] ?? '',
+        $_POST['description'] ?? '',
+        $_POST['due_date'] ?? '',
+        $_POST['status'] ?? 'Pending',
+        $_POST['task_color'] ?? '#4285f4'
+      ]);
+      echo json_encode(['success' => $result]);
+      exit;
     }
+
+    // ===== Update Task (Edit from Modal) =====
+    if ($action === 'update_task') {
+      $stmt = $db->prepare("
+        UPDATE tasks 
+        SET task_name = ?, description = ?, due_date = ?, status = ?, color = ? 
+        WHERE id = ? AND project_id = ?
+      ");
+      $result = $stmt->execute([
+        $_POST['task_name'] ?? '',
+        $_POST['description'] ?? '',
+        $_POST['due_date'] ?? '',
+        $_POST['status'] ?? 'Pending',
+        $_POST['task_color'] ?? '#4285f4',
+        $_POST['task_id'] ?? 0,
+        $project_id
+      ]);
+      echo json_encode(['success' => $result]);
+      exit;
+    }
+
+    // ===== Update Task Status (Dropdown change) =====
+    if ($action === 'update_status') {
+      $stmt = $db->prepare("UPDATE tasks SET status = ? WHERE id = ? AND project_id = ?");
+      $result = $stmt->execute([
+        $_POST['status'] ?? 'Pending',
+        $_POST['task_id'] ?? 0,
+        $project_id
+      ]);
+      echo json_encode(['success' => $result]);
+      exit;
+    }
+
+    // ===== Delete Task =====
+    if ($action === 'delete_task') {
+      $stmt = $db->prepare("DELETE FROM tasks WHERE id = ? AND project_id = ?");
+      $result = $stmt->execute([
+        $_POST['task_id'] ?? 0,
+        $project_id
+      ]);
+      echo json_encode(['success' => $result]);
+      exit;
+    }
+
   } catch (Exception $e) {
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     exit;
   }
 }
-// Count tasks by status for the current project (pie)
+
+// ========== Get Task Status Counts (Pie Chart) ==========
 $statusStmt = $db->prepare("
   SELECT status, COUNT(*) AS count 
   FROM tasks 
@@ -84,33 +108,36 @@ $statusStmt = $db->prepare("
 ");
 $statusStmt->execute([$project_id]);
 
-// Initialize counters
 $statusCounts = ['Pending' => 0, 'In Progress' => 0, 'Completed' => 0];
 foreach ($statusStmt as $row) {
   $status = $row['status'];
-  $count = (int)$row['count'];
-  $statusCounts[$status] = $count;
+  $statusCounts[$status] = (int) $row['count'];
 }
 
-// Bar Chart
-// Get incomplete task count grouped by due date for this project
+// ========== Get Task Count by Due Date (Bar Chart) ==========
 $barLabels = [];
 $barData = [];
 
-$stmt = $db->prepare("SELECT due_date, COUNT(*) as count FROM tasks WHERE project_id = ? AND status != 'Completed' GROUP BY due_date ORDER BY due_date ASC");
-$stmt->execute([$project_id]);
+$barStmt = $db->prepare("
+  SELECT due_date, COUNT(*) as count 
+  FROM tasks 
+  WHERE project_id = ? AND status != 'Completed' 
+  GROUP BY due_date 
+  ORDER BY due_date ASC
+");
+$barStmt->execute([$project_id]);
 
-while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-  $barLabels[] = date('j M', strtotime($row['due_date'])); // e.g., "13 Jun"
-  $barData[] = (int)$row['count'];
+while ($row = $barStmt->fetch(PDO::FETCH_ASSOC)) {
+  $barLabels[] = $row['due_date'] ? date('j M', strtotime($row['due_date'])) : 'N/A';
+  $barData[] = (int) $row['count'];
 }
 
-// Good Morning Greetings
-// Get current hour in 24-hour format
-$hour = date('H'); // returns 00 to 23
+// ========== Greeting Based on Time ==========
+date_default_timezone_set('Asia/Kolkata');
+$hour = (int) date('G');
 $greeting = '';
+$emoji = '';
 
-// Determine greeting and emoji
 if ($hour >= 5 && $hour < 12) {
   $greeting = 'Good morning';
   $emoji = '🌸';
@@ -120,17 +147,14 @@ if ($hour >= 5 && $hour < 12) {
 } elseif ($hour >= 17 && $hour < 21) {
   $greeting = 'Good evening';
   $emoji = '🌆';
-} elseif ($hour >= 21 || $hour < 2) {
-  $greeting = 'Working late? Good night';
-  $emoji = '🌙';
 } else {
-  $greeting = 'Hello night owl';
-  $emoji = '🦉';
+  $greeting = 'Good night';
+  $emoji = '🌙';
 }
-// Get current day and date
-$currentDayDate = date('l, F j'); // e.g., Friday, June 13
 
+$currentDayDate = date('l, F j'); // e.g., Friday, June 13
 ?>
+
 
 <!DOCTYPE html>
 <html>
@@ -138,46 +162,35 @@ $currentDayDate = date('l, F j'); // e.g., Friday, June 13
 <head>
   <title><?php echo htmlspecialchars($project['project_name']); ?> - Dashboard</title>
   <link rel="stylesheet" href="css/dashboard.css">
-
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<link rel="stylesheet" href="/css/">
-
+  <link rel="stylesheet" href="/css/">
 </head>
 
 <body>
-
   <!-- User Greeting -->
+  <a href="logout.php" style="float: right; margin: 10px; color: red;">Logout</a>
   <h2>Welcome <?php echo htmlspecialchars($_SESSION['user_name']); ?>!</h2>
   <h3>Project: <?php echo htmlspecialchars($project['project_name']); ?></h3>
-  <a href="logout.php" style="float: right; margin: 10px; color: red;">Logout</a>
 
   <!-- Sidebar Navigation -->
   <?php include './includes/sidebar.php'; ?>
 
   <!-- Main Dashboard Content -->
   <div class="main-content">
-    <div style="text-align: center; margin-top: 20px; " class="display-name">
-      <!-- Display current day and date -->
+    <div style="text-align: center; margin-top: 20px;" class="display-name">
       <p style="font-size: 14px; color: #444; margin: 0;">
         <?php echo $currentDayDate; ?>
       </p>
-      <!-- Display Name -->
       <p style="font-size: 32px; font-weight: 400; margin-top: 2px; color: #111;">
         <?php echo $greeting . ', ' . htmlspecialchars($_SESSION['user_name']) . ' ' . $emoji . '!'; ?>
-
       </p>
     </div>
 
-
     <!-- Main Task and Charts Section -->
     <div class="dashboard-container">
-
-      <!-- Tasks Box (Fixed height and scrollable) -->
+      <!-- Tasks Box -->
       <div class="task-box">
-
         <div class="task-container">
-
-          <!-- Header Section -->
           <div class="task-header">
             <div class="header-content">
               <div class="task-icon">
@@ -191,16 +204,13 @@ $currentDayDate = date('l, F j'); // e.g., Friday, June 13
             </div>
           </div>
 
-          <!-- Tab Navigation -->
           <div class="task-tabs">
             <button class="tab-btn active" data-tab="upcoming">Upcoming</button>
             <button class="tab-btn" data-tab="overdue">Overdue</button>
             <button class="tab-btn" data-tab="completed">Completed</button>
           </div>
 
-          <!-- Task List -->
           <div class="task-list">
-            <!-- Add Task Button -->
             <button class="create-task-btn" onclick="openCreateModal()">
               <span class="plus-icon">+</span> Create task
             </button>
@@ -212,7 +222,7 @@ $currentDayDate = date('l, F j'); // e.g., Friday, June 13
               foreach ($tasks as $task) {
                 $taskColor = $task['color'] ?? '#4285f4';
                 $isCompleted = $task['status'] === 'Completed';
-                echo "<div class='task-item task" . ($isCompleted ? ' completed' : '') . "' 
+                echo "<div class='task-item task" . ($isCompleted ? " completed" : "") . "' 
                         data-id='{$task['id']}' 
                         data-name='" . htmlspecialchars($task['task_name']) . "' 
                         data-status='{$task['status']}' 
@@ -220,7 +230,7 @@ $currentDayDate = date('l, F j'); // e.g., Friday, June 13
                         data-desc='" . htmlspecialchars($task['description']) . "'
                         data-color='" . htmlspecialchars($taskColor) . "'>
                         <div class='task-checkbox'>
-                          <input type='checkbox' class='task-check' " . ($isCompleted ? 'checked' : '') . " onclick='event.stopPropagation()'>
+                          <input type='checkbox' class='task-check' " . ($isCompleted ? "checked" : "") . " onclick='event.stopPropagation()'>
                         </div>
                         <div class='task-content'>
                           <span class='task-name' style='color: {$taskColor}'>" . htmlspecialchars($task['task_name']) . "</span>
@@ -234,12 +244,11 @@ $currentDayDate = date('l, F j'); // e.g., Friday, June 13
               ?>
             </div>
           </div>
-
         </div>
       </div>
     </div>
 
-    <!-- Task Creation Modal -->
+    <!-- Task Modals Embedded Inline -->
     <div id="taskModal" class="modal">
       <div class="modal-content">
         <span class="close-btn" onclick="closeModal('taskModal')">&times;</span>
@@ -266,7 +275,6 @@ $currentDayDate = date('l, F j'); // e.g., Friday, June 13
       </div>
     </div>
 
-    <!-- Edit Task Modal -->
     <div id="editTaskModal" class="modal">
       <div class="modal-content">
         <span class="close-btn" onclick="closeModal('editTaskModal')">&times;</span>
@@ -295,27 +303,13 @@ $currentDayDate = date('l, F j'); // e.g., Friday, June 13
       </div>
     </div>
 
-    <!-- Color Picker Modal -->
     <div id="colorPickerModal" class="modal">
       <div class="modal-content color-picker-content">
         <span class="close-btn" onclick="closeModal('colorPickerModal')">&times;</span>
         <h3>Choose Task Color</h3>
         <div class="color-grid">
           <?php
-          $colors = [
-            '#ff6b6b',
-            '#4ecdc4',
-            '#45b7d1',
-            '#96ceb4',
-            '#ffeaa7',
-            '#dda0dd',
-            '#98d8c8',
-            '#f7dc6f',
-            '#bb8fce',
-            '#85c1e9',
-            '#f8c471',
-            '#82e0aa'
-          ];
+          $colors = ['#ff6b6b','#4ecdc4','#45b7d1','#96ceb4','#ffeaa7','#dda0dd','#98d8c8','#f7dc6f','#bb8fce','#85c1e9','#f8c471','#82e0aa'];
           foreach ($colors as $color) {
             echo "<div class='color-box' data-color='{$color}' style='background-color: {$color};'></div>";
           }
@@ -326,283 +320,256 @@ $currentDayDate = date('l, F j'); // e.g., Friday, June 13
 
     <!-- Charts Row -->
     <div class="charts-row">
-
-      <!-- Pie Chart -->
       <div class="chart-box" id="pie-box">
         <canvas id="statusChart"></canvas>
       </div>
-
-      <!-- Bar Chart -->
       <div class="chart-box" id="bar-box">
         <canvas id="barChart"></canvas>
       </div>
-
-    </div> <!-- End of charts-row -->
-
-  </div> <!-- End of dashboard-container -->
-
-  </div> <!-- End of main-content -->
+    </div>
+  </div>
 
   <!-- Notification -->
   <div id="notification" class="notification"></div>
 
 
-  <!-- JavaScript -->
-  <script>
-    // Global variables
-    let currentColorTarget = null;
 
-    // Initialize when DOM is loaded
-    document.addEventListener('DOMContentLoaded', function() {
-      initializeEventListeners();
+
+  <!-- JS -->
+<script>
+  // ==================== GLOBAL ====================
+  let currentColorTarget = null;
+
+  document.addEventListener('DOMContentLoaded', () => {
+    initializeEventListeners();
+  });
+
+  // ==================== INIT EVENT LISTENERS ====================
+  function initializeEventListeners() {
+    // Double-click to open edit modal
+    document.addEventListener('dblclick', e => {
+      const taskElement = e.target.closest('.task-item.task');
+      if (taskElement) openEditModal(taskElement);
     });
 
-    // Initialize all event listeners
-    function initializeEventListeners() {
-      // Task double-click to edit
-      document.addEventListener('dblclick', function(e) {
-        const taskElement = e.target.closest('.task-item.task');
-        if (taskElement) {
-          openEditModal(taskElement);
-        }
-      });
-
-      // Checkbox handling
-      document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('task-check')) {
-          e.stopPropagation();
-          handleTaskCheckbox(e.target);
-        }
-      });
-
-      // Modal close when clicking outside
-      window.addEventListener('click', function(event) {
-        const modals = document.querySelectorAll('.modal');
-        modals.forEach(modal => {
-          if (event.target === modal) {
-            modal.style.display = 'none';
-          }
-        });
-      });
-
-      // Color picker buttons
-      document.getElementById('create_color_picker')?.addEventListener('click', function() {
-        currentColorTarget = 'create';
-        openColorPicker();
-      });
-
-      document.getElementById('edit_color_picker')?.addEventListener('click', function() {
-        currentColorTarget = 'edit';
-        openColorPicker();
-      });
-
-      // Color selection
-      document.querySelectorAll('.color-box').forEach(box => {
-        box.addEventListener('click', function() {
-          selectColor(this.dataset.color);
-        });
-      });
-
-      // Form submissions
-      document.getElementById('createTaskForm')?.addEventListener('submit', handleCreateTask);
-      document.getElementById('editTaskForm')?.addEventListener('submit', handleEditTask);
-    }
-
-    // Open create task modal
-    function openCreateModal() {
-      document.getElementById('taskModal').style.display = 'block';
-      document.getElementById('task_name').focus();
-    }
-
-    // Open edit task modal
-    function openEditModal(taskElement) {
-      if (!taskElement) return;
-
-      const modal = document.getElementById('editTaskModal');
-      const taskData = {
-        id: taskElement.dataset.id,
-        name: taskElement.dataset.name,
-        desc: taskElement.dataset.desc,
-        due: taskElement.dataset.due,
-        status: taskElement.dataset.status,
-        color: taskElement.dataset.color || '#4285f4'
-      };
-
-      // Populate form fields
-      document.getElementById('edit_task_id').value = taskData.id;
-      document.getElementById('edit_task_name').value = taskData.name;
-      document.getElementById('edit_description').value = taskData.desc;
-      document.getElementById('edit_due_date').value = taskData.due;
-      document.getElementById('edit_status').value = taskData.status;
-      document.getElementById('edit_task_color').value = taskData.color;
-
-      // Update color picker button
-      const colorButton = document.getElementById('edit_color_picker');
-      colorButton.style.backgroundColor = taskData.color;
-      colorButton.style.borderColor = taskData.color;
-
-      modal.style.display = 'block';
-      document.getElementById('edit_task_name').focus();
-    }
-
-    // Close modal
-    function closeModal(modalId) {
-      document.getElementById(modalId).style.display = 'none';
-    }
-
-    // Open color picker
-    function openColorPicker() {
-      document.getElementById('colorPickerModal').style.display = 'block';
-    }
-
-    // Select color
-    function selectColor(colorValue) {
-      if (currentColorTarget === 'create') {
-        document.getElementById('task_color').value = colorValue;
-        const btn = document.getElementById('create_color_picker');
-        btn.style.backgroundColor = colorValue;
-        btn.style.borderColor = colorValue;
-      } else if (currentColorTarget === 'edit') {
-        document.getElementById('edit_task_color').value = colorValue;
-        const btn = document.getElementById('edit_color_picker');
-        btn.style.backgroundColor = colorValue;
-        btn.style.borderColor = colorValue;
+    // Task checkbox click (prevent propagation + update)
+    document.addEventListener('click', e => {
+      if (e.target.classList.contains('task-check')) {
+        e.stopPropagation();
+        handleTaskCheckbox(e.target);
       }
-      closeModal('colorPickerModal');
-    }
+    });
 
-    // Handle task checkbox
-    function handleTaskCheckbox(checkbox) {
-      const taskElement = checkbox.closest('.task-item.task');
-      if (!taskElement) return;
+    // Close modal when clicking outside
+    window.addEventListener('click', e => {
+      document.querySelectorAll('.modal').forEach(modal => {
+        if (e.target === modal) modal.style.display = 'none';
+      });
+    });
 
-      const taskId = taskElement.dataset.id;
-      const status = checkbox.checked ? 'Completed' : 'Pending';
+    // Color picker buttons
+    document.getElementById('create_color_picker')?.addEventListener('click', () => {
+      currentColorTarget = 'create';
+      openColorPicker();
+    });
 
-      // Update UI immediately
-      if (checkbox.checked) {
-        taskElement.classList.add('completed');
-      } else {
-        taskElement.classList.remove('completed');
-      }
+    document.getElementById('edit_color_picker')?.addEventListener('click', () => {
+      currentColorTarget = 'edit';
+      openColorPicker();
+    });
 
-      // Update database
-      updateTaskStatus(taskId, status);
-    }
+    // Color box selection
+    document.querySelectorAll('.color-box').forEach(box => {
+      box.addEventListener('click', () => {
+        selectColor(box.dataset.color);
+      });
+    });
 
-    // Update task status
-    function updateTaskStatus(taskId, status) {
-      const formData = new FormData();
-      formData.append('action', 'update_status');
-      formData.append('task_id', taskId);
-      formData.append('status', status);
+    // Form submissions
+    document.getElementById('createTaskForm')?.addEventListener('submit', handleCreateTask);
+    document.getElementById('editTaskForm')?.addEventListener('submit', handleEditTask);
+  }
 
-      fetch(window.location.href, {
-          method: 'POST',
-          body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            showNotification('Task status updated successfully', 'success');
-          } else {
-            showNotification('Failed to update task status', 'error');
-          }
-        })
-        .catch(error => {
-          console.error('Error:', error);
-          showNotification('An error occurred', 'error');
-        });
-    }
+  // ==================== MODALS ====================
+  function openCreateModal() {
+    document.getElementById('taskModal').style.display = 'block';
+    document.getElementById('task_name').focus();
+  }
 
-    // Handle create task form
-    function handleCreateTask(e) {
-      e.preventDefault();
+  function openEditModal(taskElement) {
+    const modal = document.getElementById('editTaskModal');
 
-      const formData = new FormData(e.target);
+    const taskData = {
+      id: taskElement.dataset.id,
+      name: taskElement.dataset.name,
+      desc: taskElement.dataset.desc,
+      due: taskElement.dataset.due,
+      status: taskElement.dataset.status,
+      color: taskElement.dataset.color || '#4285f4'
+    };
 
-      fetch(window.location.href, {
-          method: 'POST',
-          body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            showNotification('Task created successfully', 'success');
-            closeModal('taskModal');
-            e.target.reset();
-            document.getElementById('task_color').value = '#428';
-            document.getElementById('create_color_picker').style.backgroundColor = '#4285f4';
-            document.getElementById('create_color_picker').style.borderColor = '#4285f4';
-            setTimeout(() => location.reload(), 1000);
-          } else {
-            showNotification('Failed to create task', 'error');
-          }
-        })
-        .catch(error => {
-          console.error('Error:', error);
-          showNotification('An error occurred', 'error');
-        });
-    }
+    document.getElementById('edit_task_id').value = taskData.id;
+    document.getElementById('edit_task_name').value = taskData.name;
+    document.getElementById('edit_description').value = taskData.desc;
+    document.getElementById('edit_due_date').value = taskData.due;
+    document.getElementById('edit_status').value = taskData.status;
+    document.getElementById('edit_task_color').value = taskData.color;
 
-    // Handle edit task form
-    function handleEditTask(e) {
-      e.preventDefault();
+    const btn = document.getElementById('edit_color_picker');
+    btn.style.backgroundColor = taskData.color;
+    btn.style.borderColor = taskData.color;
 
-      const formData = new FormData(e.target);
+    modal.style.display = 'block';
+    document.getElementById('edit_task_name').focus();
+  }
 
-      fetch(window.location.href, {
-          method: 'POST',
-          body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            showNotification('Task updated successfully', 'success');
-            closeModal('editTaskModal');
-            setTimeout(() => location.reload(), 1000);
-          } else {
-            showNotification('Failed to update task', 'error');
-          }
-        })
-        .catch(error => {
-          console.error('Error:', error);
-          showNotification('An error occurred', 'error');
-        });
-    }
+  function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+  }
 
-    // Delete task
-    function deleteTask() {
-      if (!confirm('Are you sure you want to delete this task?')) return;
+  // ==================== COLOR PICKER ====================
+  function openColorPicker() {
+    document.getElementById('colorPickerModal').style.display = 'block';
+  }
 
-      const taskId = document.getElementById('edit_task_id').value;
-      const formData = new FormData();
-      formData.append('action', 'delete_task');
-      formData.append('task_id', taskId);
+  function selectColor(color) {
+    const colorInputId = currentColorTarget === 'create' ? 'task_color' : 'edit_task_color';
+    const btnId = currentColorTarget === 'create' ? 'create_color_picker' : 'edit_color_picker';
 
-      fetch(window.location.href, {
-          method: 'POST',
-          body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            showNotification('Task deleted successfully', 'success');
-            closeModal('editTaskModal');
-            setTimeout(() => location.reload(), 1000);
-          } else {
-            showNotification('Failed to delete task', 'error');
-          }
-        })
-        .catch(error => {
-          console.error('Error:', error);
-          showNotification('An error occurred', 'error');
-        });
-    }
+    document.getElementById(colorInputId).value = color;
 
-    // pie
-    const ctx = document.getElementById('statusChart').getContext('2d');
-    const statusChart = new Chart(ctx, {
+    const btn = document.getElementById(btnId);
+    btn.style.backgroundColor = color;
+    btn.style.borderColor = color;
+
+    closeModal('colorPickerModal');
+  }
+
+  // ==================== TASK STATUS (Checkbox) ====================
+  function handleTaskCheckbox(checkbox) {
+    const taskElement = checkbox.closest('.task-item.task');
+    const taskId = taskElement.dataset.id;
+    const status = checkbox.checked ? 'Completed' : 'Pending';
+
+    taskElement.classList.toggle('completed', checkbox.checked);
+    updateTaskStatus(taskId, status);
+  }
+
+  function updateTaskStatus(taskId, status) {
+    const formData = new FormData();
+    formData.append('action', 'update_status');
+    formData.append('task_id', taskId);
+    formData.append('status', status);
+
+    fetch(window.location.href, {
+      method: 'POST',
+      body: formData
+    })
+      .then(res => res.json())
+      .then(data => {
+        const msg = data.success ? 'Task status updated successfully' : 'Failed to update task status';
+        showNotification(msg, data.success ? 'success' : 'error');
+      })
+      .catch(err => {
+        console.error(err);
+        showNotification('An error occurred', 'error');
+      });
+  }
+
+  // ==================== TASK CREATE / EDIT ====================
+  function handleCreateTask(e) {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+
+    fetch(window.location.href, {
+      method: 'POST',
+      body: formData
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          showNotification('Task created successfully', 'success');
+          closeModal('taskModal');
+          e.target.reset();
+          document.getElementById('task_color').value = '#4285f4';
+          document.getElementById('create_color_picker').style.backgroundColor = '#4285f4';
+          document.getElementById('create_color_picker').style.borderColor = '#4285f4';
+          setTimeout(() => location.reload(), 1000);
+        } else {
+          showNotification('Failed to create task', 'error');
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        showNotification('An error occurred', 'error');
+      });
+  }
+
+  function handleEditTask(e) {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+
+    fetch(window.location.href, {
+      method: 'POST',
+      body: formData
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          showNotification('Task updated successfully', 'success');
+          closeModal('editTaskModal');
+          setTimeout(() => location.reload(), 1000);
+        } else {
+          showNotification('Failed to update task', 'error');
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        showNotification('An error occurred', 'error');
+      });
+  }
+
+  // ==================== DELETE TASK ====================
+  function deleteTask() {
+    if (!confirm('Are you sure you want to delete this task?')) return;
+
+    const taskId = document.getElementById('edit_task_id').value;
+    const formData = new FormData();
+    formData.append('action', 'delete_task');
+    formData.append('task_id', taskId);
+
+    fetch(window.location.href, {
+      method: 'POST',
+      body: formData
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          showNotification('Task deleted successfully', 'success');
+          closeModal('editTaskModal');
+          setTimeout(() => location.reload(), 1000);
+        } else {
+          showNotification('Failed to delete task', 'error');
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        showNotification('An error occurred', 'error');
+      });
+  }
+
+  // ==================== NOTIFICATION ====================
+  function showNotification(msg, type) {
+    const notif = document.getElementById('notification');
+    notif.textContent = msg;
+    notif.className = `notification ${type} show`;
+    setTimeout(() => notif.classList.remove('show'), 3000);
+  }
+
+  // ==================== CHART.JS: STATUS DOUGHNUT ====================
+  const statusCtx = document.getElementById('statusChart')?.getContext('2d');
+  if (statusCtx) {
+    new Chart(statusCtx, {
       type: 'doughnut',
       data: {
         labels: ['Pending', 'In Progress', 'Completed'],
@@ -612,12 +579,7 @@ $currentDayDate = date('l, F j'); // e.g., Friday, June 13
             <?php echo $statusCounts['In Progress']; ?>,
             <?php echo $statusCounts['Completed']; ?>
           ],
-          backgroundColor: [
-            'rgb(201, 87, 146)', // Bright pastel pink
-            'rgba(135, 206, 250, 0.6)', // Bright pastel blue
-            'rgb(221, 235, 157)' // Bright parrot green
-          ],
-
+          backgroundColor: ['rgb(201, 87, 146)', 'rgba(135, 206, 250, 0.6)', 'rgb(221, 235, 157)'],
           borderWidth: 2
         }]
       },
@@ -627,31 +589,22 @@ $currentDayDate = date('l, F j'); // e.g., Friday, June 13
         plugins: {
           legend: {
             position: 'bottom',
-            labels: {
-              boxWidth: 20,
-              font: {
-                size: 14
-              }
-            }
+            labels: { boxWidth: 20, font: { size: 14 } }
           },
           title: {
             display: true,
             text: 'Task Status Overview',
-            font: {
-              size: 18
-            }
+            font: { size: 18 }
           }
         }
       }
     });
+  }
 
-    // Bar graph
-
-    // Bar Chart (example data)
-
-    // Bar Chart
-    const barCtx = document.getElementById('barChart').getContext('2d');
-    const barChart = new Chart(barCtx, {
+  // ==================== CHART.JS: INCOMPLETE TASKS BAR ====================
+  const barCtx = document.getElementById('barChart')?.getContext('2d');
+  if (barCtx) {
+    new Chart(barCtx, {
       type: 'bar',
       data: {
         labels: <?php echo json_encode($barLabels); ?>,
@@ -664,39 +617,20 @@ $currentDayDate = date('l, F j'); // e.g., Friday, June 13
       },
       options: {
         responsive: true,
-        plugins: {
-          legend: {
-            display: false
-          }
-        },
+        plugins: { legend: { display: false } },
         scales: {
-          x: {
-            title: {
-              display: true,
-              text: 'Due Dates'
-            }
-          },
+          x: { title: { display: true, text: 'Due Dates' } },
           y: {
             beginAtZero: true,
-            title: {
-              display: true,
-              text: 'Tasks'
-            }
+            title: { display: true, text: 'Tasks' }
           }
         }
       }
     });
-    // Show notification
-    function showNotification(message, type) {
-      const notification = document.getElementById('notification');
-      notification.textContent = message;
-      notification.className = `notification ${type} show`;
+  }
+</script>
 
-      setTimeout(() => {
-        notification.classList.remove('show');
-      }, 3000);
-    }
-  </script>
+
 
 </body>
 
