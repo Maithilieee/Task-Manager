@@ -1,4 +1,4 @@
-<!-- Portfolio.php -->
+
 <?php
 /**
  * API Endpoint: Get Project Details

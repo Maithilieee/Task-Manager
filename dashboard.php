@@ -32,99 +32,77 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   try {
     $action = $_POST['action'] ?? '';
 
-    // ===== Create Task =====
-    if ($action === 'create_task') {
-      $stmt = $db->prepare("
-        INSERT INTO tasks (project_id, task_name, description, due_date, status, color)
-        VALUES (?, ?, ?, ?, ?, ?)
-      ");
-      $result = $stmt->execute([
-        $project_id,
-        $_POST['task_name'] ?? '',
-        $_POST['description'] ?? '',
-        $_POST['due_date'] ?? '',
-        $_POST['status'] ?? 'Pending',
-        $_POST['task_color'] ?? '#4285f4'
-      ]);
-      echo json_encode(['success' => $result]);
-      exit;
-    }
+    switch ($action) {
+      case 'create_task':
+        $stmt = $db->prepare("INSERT INTO tasks (project_id, task_name, description, due_date, status, color) VALUES (?, ?, ?, ?, ?, ?)");
+        $result = $stmt->execute([
+          $project_id,
+          $_POST['task_name'] ?? '',
+          $_POST['description'] ?? '',
+          $_POST['due_date'] ?? '',
+          $_POST['status'] ?? 'Pending',
+          $_POST['task_color'] ?? '#4285f4'
+        ]);
+        echo json_encode(['success' => $result]);
+        break;
 
-    // ===== Update Task (Edit from Modal) =====
-    if ($action === 'update_task') {
-      $stmt = $db->prepare("
-        UPDATE tasks 
-        SET task_name = ?, description = ?, due_date = ?, status = ?, color = ? 
-        WHERE id = ? AND project_id = ?
-      ");
-      $result = $stmt->execute([
-        $_POST['task_name'] ?? '',
-        $_POST['description'] ?? '',
-        $_POST['due_date'] ?? '',
-        $_POST['status'] ?? 'Pending',
-        $_POST['task_color'] ?? '#4285f4',
-        $_POST['task_id'] ?? 0,
-        $project_id
-      ]);
-      echo json_encode(['success' => $result]);
-      exit;
-    }
+      case 'update_task':
+        $stmt = $db->prepare("UPDATE tasks SET task_name = ?, description = ?, due_date = ?, status = ?, color = ? WHERE id = ? AND project_id = ?");
+        $result = $stmt->execute([
+          $_POST['task_name'] ?? '',
+          $_POST['description'] ?? '',
+          $_POST['due_date'] ?? '',
+          $_POST['status'] ?? 'Pending',
+          $_POST['task_color'] ?? '#4285f4',
+          $_POST['task_id'] ?? 0,
+          $project_id
+        ]);
+        echo json_encode(['success' => $result]);
+        break;
 
-    // ===== Update Task Status (Dropdown change) =====
-    if ($action === 'update_status') {
-      $stmt = $db->prepare("UPDATE tasks SET status = ? WHERE id = ? AND project_id = ?");
-      $result = $stmt->execute([
-        $_POST['status'] ?? 'Pending',
-        $_POST['task_id'] ?? 0,
-        $project_id
-      ]);
-      echo json_encode(['success' => $result]);
-      exit;
-    }
+      case 'update_status':
+        $stmt = $db->prepare("UPDATE tasks SET status = ? WHERE id = ? AND project_id = ?");
+        $result = $stmt->execute([
+          $_POST['status'] ?? 'Pending',
+          $_POST['task_id'] ?? 0,
+          $project_id
+        ]);
+        echo json_encode(['success' => $result]);
+        break;
 
-    // ===== Delete Task =====
-    if ($action === 'delete_task') {
-      $stmt = $db->prepare("DELETE FROM tasks WHERE id = ? AND project_id = ?");
-      $result = $stmt->execute([
-        $_POST['task_id'] ?? 0,
-        $project_id
-      ]);
-      echo json_encode(['success' => $result]);
-      exit;
+      case 'delete_task':
+        $stmt = $db->prepare("DELETE FROM tasks WHERE id = ? AND project_id = ?");
+        $result = $stmt->execute([
+          $_POST['task_id'] ?? 0,
+          $project_id
+        ]);
+        echo json_encode(['success' => $result]);
+        break;
+
+      default:
+        echo json_encode(['success' => false, 'error' => 'Invalid action']);
     }
 
   } catch (Exception $e) {
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
-    exit;
   }
+  exit;
 }
 
 // ========== Get Task Status Counts (Pie Chart) ==========
-$statusStmt = $db->prepare("
-  SELECT status, COUNT(*) AS count 
-  FROM tasks 
-  WHERE project_id = ? 
-  GROUP BY status
-");
+$statusStmt = $db->prepare("SELECT status, COUNT(*) AS count FROM tasks WHERE project_id = ? GROUP BY status");
 $statusStmt->execute([$project_id]);
 
 $statusCounts = ['Pending' => 0, 'In Progress' => 0, 'Completed' => 0];
 foreach ($statusStmt as $row) {
-  $status = $row['status'];
-  $statusCounts[$status] = (int) $row['count'];
+  $statusCounts[$row['status']] = (int) $row['count'];
 }
 
 // ========== Get Task Count by Due Date (Bar Chart) ==========
 $barLabels = [];
 $barData = [];
 
-$barStmt = $db->prepare("
-  SELECT due_date, COUNT(*) as count 
-  FROM tasks 
-  WHERE project_id = ? AND status != 'Completed' 
-  GROUP BY due_date 
-  ORDER BY due_date ASC
-");
+$barStmt = $db->prepare("SELECT due_date, COUNT(*) as count FROM tasks WHERE project_id = ? AND status != 'Completed' GROUP BY due_date ORDER BY due_date ASC");
 $barStmt->execute([$project_id]);
 
 while ($row = $barStmt->fetch(PDO::FETCH_ASSOC)) {
@@ -152,8 +130,12 @@ if ($hour >= 5 && $hour < 12) {
   $emoji = '🌙';
 }
 
-$currentDayDate = date('l, F j'); // e.g., Friday, June 13
+$projectColor = '#C7F0E1';
+$projectName = $project['project_name'] ?? 'My Project';
+$currentDayDate = date('l, F j');
 ?>
+
+
 
 
 <!DOCTYPE html>
@@ -233,10 +215,16 @@ $currentDayDate = date('l, F j'); // e.g., Friday, June 13
                           <input type='checkbox' class='task-check' " . ($isCompleted ? "checked" : "") . " onclick='event.stopPropagation()'>
                         </div>
                         <div class='task-content'>
-                          <span class='task-name' style='color: {$taskColor}'>" . htmlspecialchars($task['task_name']) . "</span>
+                         <span class='task-name'>" . htmlspecialchars($task['task_name']) . "</span>
+
                         </div>
                         <div class='task-meta'>
-                          <span class='task-project'>" .  htmlspecialchars($project['project_name']) . "</span>
+                         <span class='project-tag' style='background-color: " . htmlspecialchars($projectColor) . "'>
+  <span class='project-dot' style='background-color: " . htmlspecialchars($taskColor) . ";'></span>
+  " . htmlspecialchars($projectName) . "
+</span>
+
+
                           <span class='task-date'>" . date('j M', strtotime($task['due_date'])) . "</span>
                         </div>
                       </div>";

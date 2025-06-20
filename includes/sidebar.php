@@ -54,8 +54,8 @@ $project_id = $project['id'];
     </a>
 
     <div class="section-title">Insights <button class="plus">+</button></div>
-    <a href="./dummy.php" class="nav-item"><span class="icon">📊</span> Reporting</a>
-    <a href="#" class="nav-item"><span class="icon">📁</span> Portfolios</a>
+    <a href="../reporting.php" class="nav-item"><span class="icon">📊</span> Reporting</a>
+    <a href="../portfolio.php" class="nav-item"><span class="icon">📁</span> Portfolios</a>
     <a href="#" class="nav-item"><span class="icon">🎯</span> Goals</a>
 
     <div class="section-title">Projects <button class="plus">+</button></div>
